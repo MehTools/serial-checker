@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tender — Multi-Currency Fancy Serial Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@1,300;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2ee; --white: #ffffff; --ink: #1c1f1a; --sage: #4a6741;
+    --sage-light: #eef2ec; --sage-mid: #c8d8c4; --stone: #8a8d87; --border: #dde0da;
+    --amber: #c87800; --amber-bg: #fdf6e8; --red: #c84040; --red-bg: #fdf0f0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; padding:24px 20px 80px; }
+  .wrap { max-width:600px; margin:0 auto; }
+  nav { display:flex; align-items:center; justify-content:space-between; padding:16px 0 36px; }
+  .logo { font-family:'Fraunces',serif; font-style:italic; font-size:26px; font-weight:600; color:var(--ink); }
+  .logo-dot { color:var(--sage); }
+  .nav-badge { background:var(--sage); color:#fff; font-size:10px; font-weight:600; letter-spacing:2px; padding:5px 12px; border-radius:100px; text-transform:uppercase; }
+  .hero { margin-bottom:28px; }
+  .hero-label { font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--stone); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .hero-label::before { content:''; width:20px; height:1.5px; background:var(--sage); display:inline-block; }
+  .hero h1 { font-family:'Fraunces',serif; font-style:italic; font-size:clamp(28px,5vw,44px); font-weight:300; line-height:1.15; letter-spacing:-0.5px; }
+  .hero h1 strong { font-weight:600; font-style:normal; }
+  .currency-switcher { display:flex; gap:6px; margin-bottom:20px; background:var(--white); border-radius:14px; padding:6px; border:1.5px solid var(--border); }
+  .currency-btn { flex:1; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; padding:10px 8px; border-radius:10px; border:none; background:transparent; color:var(--stone); cursor:pointer; transition:all 0.15s; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .currency-btn .flag { font-size:18px; line-height:1; }
+  .currency-btn .code { font-size:11px; font-weight:700; letter-spacing:1px; }
+  .currency-btn:hover { background:var(--bg); color:var(--ink); }
+  .currency-btn.active { background:var(--ink); color:var(--white); }
+  .currency-btn.active .code { color:var(--white); }
+  .card { background:var(--white); border-radius:20px; padding:28px; margin-bottom:16px; box-shadow:0 2px 8px rgba(28,31,26,0.06),0 12px 40px rgba(28,31,26,0.06); }
+  .currency-info { background:var(--bg); border-radius:10px; padding:12px 16px; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+  .ci-flag { font-size:24px; } .ci-text { flex:1; }
+  .ci-name { font-size:13px; font-weight:600; }
+  .ci-hint { font-size:11px; color:var(--stone); margin-top:2px; }
+  .ci-badge { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:3px 8px; border-radius:100px; }
+  .ci-badge.strong { background:var(--sage-light); color:var(--sage); }
+  .ci-badge.medium { background:var(--amber-bg); color:var(--amber); }
+  .ci-badge.limited { background:var(--red-bg); color:var(--red); }
+  .denom-label { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--stone); margin-bottom:10px; }
+  .denom-scroller { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:24px; }
+  .denom-btn { font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; padding:7px 16px; border-radius:100px; border:1.5px solid var(--border); background:transparent; color:var(--stone); cursor:pointer; transition:all 0.15s; }
+  .denom-btn:hover { border-color:var(--sage); color:var(--sage); }
+  .denom-btn.active { background:var(--sage); color:#fff; border-color:var(--sage); }
+  .prefix-input { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; letter-spacing:3px; text-transform:uppercase; width:90px; padding:10px 14px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg); color:var(--ink); outline:none; text-align:center; transition:border-color 0.15s; }
+  .prefix-input:focus { border-color:var(--sage); background:var(--sage-light); }
+  .prefix-label { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--stone); margin-bottom:6px; }
+  .input-label { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--stone); margin-bottom:10px; display:block; }
+  .input-shell { background:var(--bg); border-radius:14px; padding:4px 4px 4px 20px; display:flex; align-items:center; gap:8px; margin-bottom:8px; border:1.5px solid transparent; transition:border-color 0.15s; }
+  .input-shell:focus-within { border-color:var(--sage); background:var(--sage-light); }
+  .serial-input { flex:1; font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; font-weight:700; letter-spacing:6px; background:transparent; border:none; outline:none; color:var(--ink); padding:12px 0; min-width:0; }
+  .serial-input::placeholder { color:var(--border); font-weight:300; font-size:20px; letter-spacing:4px; }
+  .check-btn { font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; padding:14px 22px; background:var(--ink); color:#fff; border:none; border-radius:10px; cursor:pointer; white-space:nowrap; transition:all 0.15s; flex-shrink:0; }
+  .check-btn:hover { background:var(--sage); transform:scale(1.02); }
+  .input-hint { font-size:11px; color:var(--stone); }
+  .divider { height:1px; background:var(--border); margin:22px 0; }
+  #results { display:none; }
+  #results.on { display:block; animation:popIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes popIn { from{opacity:0;transform:scale(0.98)} to{opacity:1;transform:scale(1)} }
+  .score-hero { display:flex; align-items:center; gap:24px; margin-bottom:24px; }
+  .ring-wrap { position:relative; width:90px; height:90px; flex-shrink:0; }
+  .ring-wrap svg { transform:rotate(-90deg); }
+  .ring-bg { fill:none; stroke:var(--border); stroke-width:7; }
+  .ring-fill { fill:none; stroke-width:7; stroke-linecap:round; stroke-dasharray:226; stroke-dashoffset:226; transition:stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1),stroke 0.3s; }
+  .ring-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-num { font-size:20px; font-weight:800; letter-spacing:-1px; line-height:1; }
+  .ring-sub { font-size:8px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--stone); }
+  .score-text { flex:1; }
+  .score-verdict { font-family:'Fraunces',serif; font-style:italic; font-size:20px; font-weight:600; line-height:1.2; margin-bottom:4px; }
+  .score-detail { font-size:11px; color:var(--stone); line-height:1.6; }
+  .prefix-alert { border-radius:10px; padding:12px 16px; margin-bottom:16px; display:none; }
+  .prefix-alert.show { display:flex; gap:10px; align-items:flex-start; }
+  .prefix-alert.special { background:#fff8e8; border:1.5px solid #f0d060; }
+  .prefix-alert.normal { background:var(--bg); border:1.5px solid var(--border); }
+  .pa-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+  .pa-title { font-size:12px; font-weight:700; margin-bottom:2px; }
+  .pa-desc { font-size:11px; color:var(--stone); line-height:1.5; }
+  .patterns-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+  .pat-pill { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border); font-size:11px; font-weight:500; }
+  .pat-pill.hit { background:var(--sage-light); border-color:var(--sage-mid); color:var(--sage); }
+  .pat-pill.miss { color:var(--stone); }
+  .pat-icon { width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; }
+  .pat-pill.hit .pat-icon { background:var(--sage); color:#fff; }
+  .pat-pill.miss .pat-icon { background:var(--border); color:var(--stone); }
+  .value-strip { border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; background:var(--sage-light); }
+  .vs-label { font-size:9px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--sage); margin-bottom:4px; }
+  .vs-amount { font-family:'Fraunces',serif; font-style:italic; font-size:28px; font-weight:600; color:var(--ink); }
+  .vs-note { font-size:11px; color:var(--stone); max-width:180px; text-align:right; line-height:1.5; }
+  .ebay-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:var(--ink); color:#fff; border:none; border-radius:12px; text-decoration:none; transition:all 0.15s; font-family:'Plus Jakarta Sans',sans-serif; }
+  .ebay-btn:hover { background:var(--sage); }
+  .ebay-btn-text { font-size:13px; font-weight:600; }
+  .ebay-btn-sub { font-size:10px; opacity:0.6; margin-top:2px; }
+  .ebay-arrow { font-size:20px; }
+  .empty { text-align:center; padding:36px 0 16px; }
+  .empty-icon { font-size:44px; margin-bottom:10px; }
+  .empty-text { font-family:'Fraunces',serif; font-style:italic; font-size:15px; color:var(--stone); }
+  @media(max-width:480px){ .patterns-grid{grid-template-columns:1fr;} .value-strip{flex-direction:column;align-items:flex-start;gap:8px;} .vs-note{text-align:left;max-width:none;} .currency-btn .code{display:none;} }
+  .scan-trigger-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:12px; border:1.5px dashed var(--border); background:transparent; color:var(--stone); font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; margin-bottom:16px; }
+  .scan-trigger-btn:hover { border-color:var(--sage); color:var(--sage); background:var(--sage-light); }
+  .scan-trigger-btn .scan-icon { font-size:18px; }
+  .scanner-modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.96); flex-direction:column; align-items:center; justify-content:center; }
+  .scanner-modal.open { display:flex; animation:modalIn 0.25s ease; }
+  @keyframes modalIn { from{opacity:0} to{opacity:1} }
+  .scanner-header { position:absolute; top:0; left:0; right:0; padding:20px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .scanner-title { font-family:'Fraunces',serif; font-style:italic; font-size:18px; color:#fff; }
+  .scanner-close { width:36px; height:36px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.2); background:transparent; color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .scanner-close:hover { background:rgba(255,255,255,0.1); }
+  .scanner-body { width:100%; max-width:480px; padding:0 20px; }
+  .viewfinder-wrap { position:relative; width:100%; border-radius:16px; overflow:hidden; background:#000; }
+  #scannerVideo { width:100%; display:block; border-radius:16px; max-height:55vh; object-fit:cover; }
+  .crop-zone { position:absolute; left:5%; right:5%; top:45%; transform:translateY(-50%); height:30%; border:2px solid rgba(74,103,65,0.9); border-radius:6px; box-shadow:0 0 0 9999px rgba(0,0,0,0.55); animation:pulseBorder 2s ease infinite; }
+  @keyframes pulseBorder { 0%,100%{border-color:rgba(74,103,65,0.8)} 50%{border-color:rgba(74,103,65,1);box-shadow:0 0 0 9999px rgba(0,0,0,0.55),0 0 12px rgba(74,103,65,0.6);} }
+  .crop-corners { position:absolute; inset:0; pointer-events:none; }
+  .corner { position:absolute; width:20px; height:20px; border-color:#4a6741; border-style:solid; }
+  .corner.tl { top:calc(45% - 15% - 10px); left:4%; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+  .corner.tr { top:calc(45% - 15% - 10px); right:4%; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+  .corner.bl { bottom:calc(55% - 15% - 10px); left:4%; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+  .corner.br { bottom:calc(55% - 15% - 10px); right:4%; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+  .crop-label-inner { position:absolute; bottom:calc(55% - 15% - 28px); left:0; right:0; text-align:center; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.6); }
+  .scan-line { position:absolute; left:10%; right:10%; height:2px; background:linear-gradient(90deg,transparent,#4a6741,transparent); display:none; top:50%; }
+  .scan-line.active { display:block; animation:scanAnim 1.8s ease-in-out infinite; }
+  @keyframes scanAnim { 0%{transform:translateY(-200%);opacity:0} 15%{opacity:1} 85%{opacity:1} 100%{transform:translateY(200%);opacity:0} }
+  .scanner-controls { margin-top:20px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .capture-btn { width:64px; height:64px; border-radius:50%; border:3px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s; }
+  .capture-btn::after { content:''; width:48px; height:48px; border-radius:50%; background:#fff; display:block; transition:all 0.12s; }
+  .capture-btn:hover::after { background:#4a6741; transform:scale(0.92); }
+  .capture-btn:active::after { transform:scale(0.82); }
+  .scanner-hint { font-size:11px; color:rgba(255,255,255,0.45); text-align:center; line-height:1.6; }
+  .ocr-status { margin-top:14px; padding:11px 18px; border-radius:10px; background:rgba(255,255,255,0.07); text-align:center; font-size:12px; font-weight:600; color:#fff; display:none; }
+  .ocr-status.show { display:block; }
+  .ocr-status.success { background:rgba(74,103,65,0.4); color:#a8d4a0; }
+  .ocr-status.error { background:rgba(200,64,64,0.25); color:#f0a0a0; }
+  .ocr-loading { display:none; align-items:center; gap:8px; margin-top:10px; }
+  .ocr-loading.show { display:flex; }
+  .ocr-spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.15); border-top-color:#4a6741; border-radius:50%; animation:spinIt 0.8s linear infinite; }
+  @keyframes spinIt { to{transform:rotate(360deg)} }
+  .ocr-loading-text { font-size:11px; color:rgba(255,255,255,0.5); }
+  .upload-label { font-size:11px; color:rgba(255,255,255,0.35); cursor:pointer; text-decoration:underline; }
+  .upload-label:hover { color:rgba(255,255,255,0.6); }
+  #fileUpload { display:none; }
+  #captureCanvas { display:none; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo">tender<span class="logo-dot">.</span></div>
+    <div class="nav-badge">Free · 4 Currencies</div>
+  </nav>
+  <div class="hero">
+    <div class="hero-label">Multi-Currency Serial Checker</div>
+    <h1>Is your banknote worth<br>more than <strong>face value?</strong></h1>
+  </div>
+  <div class="currency-switcher">
+    <button class="currency-btn active" onclick="setCurrency('USD',this)"><span class="flag">🇺🇸</span><span class="code">USD</span></button>
+    <button class="currency-btn" onclick="setCurrency('GBP',this)"><span class="flag">🇬🇧</span><span class="code">GBP</span></button>
+    <button class="currency-btn" onclick="setCurrency('EUR',this)"><span class="flag">🇪🇺</span><span class="code">EUR</span></button>
+    <button class="currency-btn" onclick="setCurrency('AUD',this)"><span class="flag">🇦🇺</span><span class="code">AUD</span></button>
+  </div>
+  <div class="card">
+    <div class="currency-info" id="currencyInfo">
+      <div class="ci-flag" id="ciFlag">🇺🇸</div>
+      <div class="ci-text">
+        <div class="ci-name" id="ciName">US Dollar — 8-digit serial number</div>
+        <div class="ci-hint" id="ciHint">Enter digits only. Skip letters at start/end.</div>
+      </div>
+      <div class="ci-badge strong" id="ciBadge">Strong market</div>
+    </div>
+    <div id="prefixSection" style="display:none;margin-bottom:16px;">
+      <div class="prefix-label" id="prefixLabel">Letter Prefix (e.g. AA01)</div>
+      <input class="prefix-input" id="prefixInput" type="text" maxlength="6" placeholder="AA01" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+    </div>
+    <div class="denom-label">Denomination</div>
+    <div class="denom-scroller" id="denomRow"></div>
+    <button class="scan-trigger-btn" onclick="openScanner()"><span class="scan-icon">📷</span> Scan note with camera</button>
+    <label class="input-label" id="serialLabel">Serial Number (8 digits)</label>
+    <div class="input-shell">
+      <input class="serial-input" id="serialInput" type="text" maxlength="8" placeholder="00000000" oninput="sanitizeInput(this)" onkeydown="if(event.key==='Enter')check()">
+      <button class="check-btn" onclick="check()">Check it →</button>
+    </div>
+    <div class="input-hint" id="inputHint">Enter the 8 digits only — skip any letters at the start or end</div>
+    <div class="divider"></div>
+    <div id="results">
+      <div class="score-hero">
+        <div class="ring-wrap">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle class="ring-bg" cx="45" cy="45" r="36"/>
+            <circle class="ring-fill" id="ringFill" cx="45" cy="45" r="36"/>
+          </svg>
+          <div class="ring-label">
+            <div class="ring-num" id="ringNum">0</div>
+            <div class="ring-sub">/ 100</div>
+          </div>
+        </div>
+        <div class="score-text">
+          <div class="score-verdict" id="scoreVerdict">—</div>
+          <div class="score-detail" id="scoreDetail">—</div>
+        </div>
+      </div>
+      <div class="prefix-alert" id="prefixAlert">
+        <div class="pa-icon" id="paIcon">⭐</div>
+        <div><div class="pa-title" id="paTitle">—</div><div class="pa-desc" id="paDesc">—</div></div>
+      </div>
+      <div class="patterns-grid" id="patternsGrid"></div>
+      <div class="value-strip">
+        <div>
+          <div class="vs-label">Est. Collector Value</div>
+          <div class="vs-amount" id="vsAmount">—</div>
+        </div>
+        <div class="vs-note" id="vsNote">—</div>
+      </div>
+      <a class="ebay-btn" id="ebayBtn" href="#" target="_blank">
+        <div><div class="ebay-btn-text">Browse real sold listings</div><div class="ebay-btn-sub">eBay completed sales — verified prices</div></div>
+        <div class="ebay-arrow">↗</div>
+      </a>
+    </div>
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🪙</div>
+      <div class="empty-text">Enter a serial number above to reveal its worth</div>
+    </div>
+  </div>
+</div>
+
+<div class="scanner-modal" id="scannerModal">
+  <div class="scanner-header">
+    <div class="scanner-title">Scan Serial Number</div>
+    <button class="scanner-close" onclick="closeScanner()">✕</button>
+  </div>
+  <div class="scanner-body">
+    <div class="viewfinder-wrap">
+      <video id="scannerVideo" autoplay playsinline muted></video>
+      <div class="crop-zone"></div>
+      <div class="crop-corners">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+      <div class="crop-label-inner">ALIGN SERIAL NUMBER HERE</div>
+      <div class="scan-line" id="scanLine"></div>
+    </div>
+    <div class="scanner-controls">
+      <button class="capture-btn" onclick="captureAndOCR()" title="Capture"></button>
+      <div class="scanner-hint">Position the serial number inside the green box.<br>Tap the button to scan. Good lighting helps!</div>
+      <div class="ocr-loading" id="ocrLoading"><div class="ocr-spinner"></div><div class="ocr-loading-text">Reading serial number…</div></div>
+      <div class="ocr-status" id="ocrStatus"></div>
+      <label class="upload-label">📁 Or upload a p
