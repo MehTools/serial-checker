@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tender - Multi-Currency Fancy Serial Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@1,300;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2ee;
+    --white: #ffffff;
+    --ink: #1c1f1a;
+    --sage: #4a6741;
+    --sage-light: #eef2ec;
+    --sage-mid: #c8d8c4;
+    --stone: #8a8d87;
+    --border: #dde0da;
+    --amber: #c87800;
+    --amber-bg: #fdf6e8;
+    --red: #c84040;
+    --red-bg: #fdf0f0;
+    --blue: #2a5080;
+    --blue-bg: #eef3f9;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px 20px 80px;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 36px; }
+  .logo { font-family: 'Fraunces', serif; font-style: italic; font-size: 26px; font-weight: 600; color: var(--ink); }
+  .logo-dot { color: var(--sage); }
+  .nav-badge { background: var(--sage); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 2px; padding: 5px 12px; border-radius: 100px; text-transform: uppercase; }
+
+  .hero { margin-bottom: 28px; }
+  .hero-label { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--stone); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .hero-label::before { content:''; width: 20px; height: 1.5px; background: var(--sage); display: inline-block; }
+  .hero h1 { font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(28px, 5vw, 44px); font-weight: 300; line-height: 1.15; letter-spacing: -0.5px; }
+  .hero h1 strong { font-weight: 600; font-style: normal; }
+
+  /* CURRENCY SWITCHER */
+  .currency-switcher { display: flex; gap: 6px; margin-bottom: 20px; background: var(--white); border-radius: 14px; padding: 6px; border: 1.5px solid var(--border); }
+  .currency-btn {
+    flex: 1; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 10px 8px; border-radius: 10px; border: none; background: transparent;
+    color: var(--stone); cursor: pointer; transition: all 0.15s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .currency-btn .flag { font-size: 18px; line-height: 1; }
+  .currency-btn .code { font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  .currency-btn:hover { background: var(--bg); color: var(--ink); }
+  .currency-btn.active { background: var(--ink); color: var(--white); }
+  .currency-btn.active .code { color: var(--white); }
+
+  .card { background: var(--white); border-radius: 20px; padding: 28px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(28,31,26,0.06), 0 12px 40px rgba(28,31,26,0.06); }
+
+  /* Currency info strip */
+  .currency-info { background: var(--bg); border-radius: 10px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+  .ci-flag { font-size: 24px; }
+  .ci-text { flex: 1; }
+  .ci-name { font-size: 13px; font-weight: 600; }
+  .ci-hint { font-size: 11px; color: var(--stone); margin-top: 2px; }
+  .ci-badge { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 3px 8px; border-radius: 100px; }
+  .ci-badge.strong { background: var(--sage-light); color: var(--sage); }
+  .ci-badge.medium { background: var(--amber-bg); color: var(--amber); }
+  .ci-badge.limited { background: var(--red-bg); color: var(--red); }
+
+  .denom-label { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--stone); margin-bottom: 10px; }
+  .denom-scroller { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+  .denom-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 7px 16px; border-radius: 100px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--stone); cursor: pointer; transition: all 0.15s;
+  }
+  .denom-btn:hover { border-color: var(--sage); color: var(--sage); }
+  .denom-btn.active { background: var(--sage); color: #fff; border-color: var(--sage); }
+
+  /* Special prefix check (GBP/AUD) */
+  .prefix-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .prefix-input {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    width: 90px; padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--ink); outline: none; text-align: center;
+    transition: border-color 0.15s; flex-shrink: 0;
+  }
+  .prefix-input:focus { border-color: var(--sage); background: var(--sage-light); }
+  .prefix-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--stone); margin-bottom: 6px; }
+
+  .input-label { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--stone); margin-bottom: 10px; display: block; }
+  .input-shell {
+    background: var(--bg); border-radius: 14px; padding: 4px 4px 4px 20px;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    border: 1.5px solid transparent; transition: border-color 0.15s;
+  }
+  .input-shell:focus-within { border-color: var(--sage); background: var(--sage-light); }
+  .serial-input {
+    flex: 1; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: 4px;
+    background: transparent; border: none; outline: none; color: var(--ink);
+    padding: 12px 0; min-width: 0;
+  }
+  .serial-input::placeholder { color: var(--border); font-weight: 300; font-size: 16px; letter-spacing: 3px; }
+  .check-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 12px 14px; background: var(--ink); color: #fff;
+    border: none; border-radius: 10px; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .check-btn:hover { background: var(--sage); transform: scale(1.02); }
+  .input-hint { font-size: 11px; color: var(--stone); }
+
+  .divider { height: 1px; background: var(--border); margin: 22px 0; }
+
+  #results { display: none; }
+  #results.on { display: block; animation: popIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes popIn { from{opacity:0;transform:scale(0.98)} to{opacity:1;transform:scale(1)} }
+
+  /* Rarity ring */
+  .score-hero { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; }
+  .ring-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 7; }
+  .ring-fill { fill: none; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 226; stroke-dashoffset: 226; transition: stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1), stroke 0.3s; }
+  .ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-num { font-size: 20px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .ring-sub { font-size: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--stone); }
+  .score-text { flex: 1; }
+  .score-verdict { font-family: 'Fraunces', serif; font-style: italic; font-size: 20px; font-weight: 600; line-height: 1.2; margin-bottom: 4px; }
+  .score-detail { font-size: 11px; color: var(--stone); line-height: 1.6; }
+
+  /* Special prefix alert */
+  .prefix-alert { border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: none; }
+  .prefix-alert.show { display: flex; gap: 10px; align-items: flex-start; }
+  .prefix-alert.special { background: #fff8e8; border: 1.5px solid #f0d060; }
+  .prefix-alert.normal { background: var(--bg); border: 1.5px solid var(--border); }
+  .pa-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .pa-title { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .pa-desc { font-size: 11px; color: var(--stone); line-height: 1.5; }
+
+  .patterns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .pat-pill { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 11px; font-weight: 500; }
+  .pat-pill.hit { background: var(--sage-light); border-color: var(--sage-mid); color: var(--sage); }
+  .pat-pill.miss { color: var(--stone); }
+  .pat-icon { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .pat-pill.hit .pat-icon { background: var(--sage); color: #fff; }
+  .pat-pill.miss .pat-icon { background: var(--border); color: var(--stone); }
+
+  .value-strip { border-radius: 14px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; background: var(--sage-light); }
+  .vs-label { font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--sage); margin-bottom: 4px; }
+  .vs-amount { font-family: 'Fraunces', serif; font-style: italic; font-size: 28px; font-weight: 600; color: var(--ink); }
+  .vs-note { font-size: 11px; color: var(--stone); max-width: 180px; text-align: right; line-height: 1.5; }
+
+  .ebay-btn {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: var(--ink); color: #fff; border: none;
+    border-radius: 12px; text-decoration: none; transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .ebay-btn:hover { background: var(--sage); }
+  .ebay-btn-text { font-size: 13px; font-weight: 600; }
+  .ebay-btn-sub { font-size: 10px; opacity: 0.6; margin-top: 2px; }
+  .ebay-arrow { font-size: 20px; }
+
+  .empty { text-align: center; padding: 36px 0 16px; }
+  .empty-icon { font-size: 44px; margin-bottom: 10px; }
+  .empty-text { font-family: 'Fraunces', serif; font-style: italic; font-size: 15px; color: var(--stone); }
+
+  @media(max-width:480px){ .patterns-grid{grid-template-columns:1fr;} .value-strip{flex-direction:column;align-items:flex-start;gap:8px;} .vs-note{text-align:left;max-width:none;} .currency-btn .code{display:none;} }
+
+  /* -- SCANNER MODAL ----------------------------------- */
+  .scan-trigger-btn {
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px; border-radius:12px; border:1.5px dashed var(--border);
+    background:transparent; color:var(--stone); font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; margin-bottom:16px;
+  }
+  .scan-trigger-btn:hover { border-color:var(--sage); color:var(--sage); background:var(--sage-light); }
+  .scan-trigger-btn .scan-icon { font-size:18px; }
+  .scanner-modal {
+    display:none; position:fixed; inset:0; z-index:1000;
+    background:rgba(0,0,0,0.96); flex-direction:column; align-items:center; justify-content:center;
+  }
+  .scanner-modal.open { display:flex; animation:modalIn 0.25s ease; }
+  @keyframes modalIn { from{opacity:0} to{opacity:1} }
+  .scanner-header {
+    position:absolute; top:0; left:0; right:0;
+    padding:20px 24px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .scanner-title { font-family:'Fraunces',serif; font-style:italic; font-size:18px; color:#fff; }
+  .scanner-close {
+    width:36px; height:36px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.2);
+    background:transparent; color:#fff; font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all 0.15s;
+  }
+  .scanner-close:hover { background:rgba(255,255,255,0.1); }
+  .scanner-body { width:100%; max-width:480px; padding:0 20px; }
+  .viewfinder-wrap { position:relative; width:100%; border-radius:16px; overflow:hidden; background:#000; }
+  #scannerVideo { width:100%; display:block; border-radius:16px; max-height:55vh; object-fit:cover; }
+  .crop-zone {
+    position:absolute; left:5%; right:5%; top:45%; transform:translateY(-50%);
+    height:30%; border:2px solid rgba(74,103,65,0.9); border-radius:6px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.55); animation:pulseBorder 2s ease infinite;
+  }
+  @keyframes pulseBorder { 0%,100%{border-color:rgba(74,103,65,0.8)} 50%{border-color:rgba(74,103,65,1); box-shadow:0 0 0 9999px rgba(0,0,0,0.55),0 0 12px rgba(74,103,65,0.6);} }
+  .crop-corners { position:absolute; inset:0; pointer-events:none; }
+  .corner { position:absolute; width:20px; height:20px; border-color:#4a6741; border-style:solid; }
+  .corner.tl { top:calc(45% - 15% - 10px); left:4%; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+  .corner.tr { top:calc(45% - 15% - 10px); right:4%; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+  .corner.bl { bottom:calc(55% - 15% - 10px); left:4%; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+  .corner.br { bottom:calc(55% - 15% - 10px); right:4%; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+  .crop-label-inner {
+    position:absolute; bottom:calc(55% - 15% - 28px); left:0; right:0; text-align:center;
+    font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    color:rgba(255,255,255,0.6);
+  }
+  .scan-line {
+    position:absolute; left:10%; right:10%; height:2px;
+    background:linear-gradient(90deg,transparent,#4a6741,transparent);
+    display:none; top:50%;
+  }
+  .scan-line.active { display:block; animation:scanAnim 1.8s ease-in-out infinite; }
+  @keyframes scanAnim {
+    0%{transform:translateY(-200%);opacity:0} 15%{opacity:1} 85%{opacity:1} 100%{transform:translateY(200%);opacity:0}
+  }
+  .scanner-controls { margin-top:20px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .capture-btn {
+    width:64px; height:64px; border-radius:50%;
+    border:3px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s;
+  }
+  .capture-btn::after {
+    content:''; width:48px; height:48px; border-radius:50%;
+    background:#fff; display:block; transition:all 0.12s;
+  }
+  .capture-btn:hover::after { background:#4a6741; transform:scale(0.92); }
+  .capture-btn:active::after { transform:scale(0.82); }
+  .scanner-hint { font-size:11px; color:rgba(255,255,255,0.45); text-align:center; line-height:1.6; }
+  .ocr-status {
+    margin-top:14px; padding:11px 18px; border-radius:10px;
+    background:rgba(255,255,255,0.07); text-align:center;
+    font-size:12px; font-weight:600; color:#fff; display:none;
+  }
+  .ocr-status.show { display:block; }
+  .ocr-status.success { background:rgba(74,103,65,0.4); color:#a8d4a0; }
+  .ocr-status.error { background:rgba(200,64,64,0.25); color:#f0a0a0; }
+  .ocr-loading { display:none; align-items:center; gap:8px; margin-top:10px; }
+  .ocr-loading.show { display:flex; }
+  .ocr-spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.15); border-top-color:#4a6741; border-radius:50%; animation:spinIt 0.8s linear infinite; }
+  @keyframes spinIt { to{transform:rotate(360deg)} }
+  .ocr-loading-text { font-size:11px; color:rgba(255,255,255,0.5); }
+  .upload-label { font-size:11px; color:rgba(255,255,255,0.35); cursor:pointer; text-decoration:underline; }
+  .upload-label:hover { color:rgba(255,255,255,0.6); }
+  #fileUpload { display:none; }
+  #captureCanvas { display:none; }
+
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo">tender<span class="logo-dot">.</span></div>
+    <div class="nav-badge">Free · 4 Currencies</div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-label">Multi-Currency Serial Checker</div>
+    <h1>Is your banknote worth<br>more than <strong>face value?</strong></h1>
+  </div>
+
+  <!-- CURRENCY SWITCHER -->
+  <div class="currency-switcher">
+    <button class="currency-btn active" onclick="setCurrency('USD',this)">
+      <span class="flag">🇺🇸</span><span class="code">USD</span>
+    </button>
+    <button class="currency-btn" onclick="setCurrency('GBP',this)">
+      <span class="flag">🇬🇧</span><span class="code">GBP</span>
+    </button>
+    <button class="currency-btn" onclick="setCurrency('EUR',this)">
+      <span class="flag">🇪🇺</span><span class="code">EUR</span>
+    </button>
+    <button class="currency-btn" onclick="setCurrency('AUD',this)">
+      <span class="flag">🇦🇺</span><span class="code">AUD</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <!-- Currency info -->
+    <div class="currency-info" id="currencyInfo">
+      <div class="ci-flag" id="ciFlag">🇺🇸</div>
+      <div class="ci-text">
+        <div class="ci-name" id="ciName">US Dollar (8 digits)</div>
+        <div class="ci-hint" id="ciHint">Enter digits only. Skip letters at start/end.</div>
+      </div>
+      <div class="ci-badge strong" id="ciBadge">Strong market</div>
+    </div>
+
+    <!-- GBP/AUD prefix input (hidden for USD/EUR) -->
+    <div id="prefixSection" style="display:none; margin-bottom:16px;">
+      <div class="prefix-label" id="prefixLabel">Letter Prefix (e.g. AA01)</div>
+      <input class="prefix-input" id="prefixInput" type="text" maxlength="6" placeholder="AA01"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+    </div>
+
+    <div class="denom-label">Denomination</div>
+    <div class="denom-scroller" id="denomRow"></div>
+
+    <button class="scan-trigger-btn" onclick="openScanner()">
+      <span class="scan-icon">📷</span>
+      Scan note with camera
+    </button>
+    <label class="input-label" id="serialLabel">Serial Number (8 digits)</label>
+    <div class="input-shell">
+      <input class="serial-input" id="serialInput" type="text" maxlength="8" placeholder="00000000"
+        oninput="sanitizeInput(this)"
+        onkeydown="if(event.key==='Enter')check()">
+      <button class="check-btn" onclick="check()">Check it →</button>
+    </div>
+    <div class="input-hint" id="inputHint">Enter the 8 digits only - skip any letters at the start or end</div>
+
+    <div class="divider"></div>
+
+    <div id="results">
+      <div class="score-hero">
+        <div class="ring-wrap">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle class="ring-bg" cx="45" cy="45" r="36"/>
+            <circle class="ring-fill" id="ringFill" cx="45" cy="45" r="36"/>
+          </svg>
+          <div class="ring-label">
+            <div class="ring-num" id="ringNum">0</div>
+            <div class="ring-sub">/ 100</div>
+          </div>
+        </div>
+        <div class="score-text">
+          <div class="score-verdict" id="scoreVerdict">-</div>
+          <div class="score-detail" id="scoreDetail">-</div>
+        </div>
+      </div>
+
+      <!-- Special prefix alert (GBP/AUD) -->
+      <div class="prefix-alert" id="prefixAlert">
+        <div class="pa-icon" id="paIcon">⭐</div>
+        <div>
+          <div class="pa-title" id="paTitle">-</div>
+          <div class="pa-desc" id="paDesc">-</div>
+        </div>
+      </div>
+
+      <div class="patterns-grid" id="patternsGrid"></div>
+
+      <div class="value-strip">
+        <div>
+          <div class="vs-label">Est. Collector Value</div>
+          <div class="vs-amount" id="vsAmount">-</div>
+        </div>
+        <div class="vs-note" id="vsNote">-</div>
+      </div>
+
+      <a class="ebay-btn" id="ebayBtn" href="#" target="_blank">
+        <div>
+          <div class="ebay-btn-text">Browse real sold listings</div>
+          <div class="ebay-btn-sub">eBay completed sales - verified prices</div>
+        </div>
+        <div class="ebay-arrow">↗</div>
+      </a>
+    </div>
+
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🪙</div>
+      <div class="empty-text">Enter a serial number above to reveal its worth</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SCANNER MODAL -->
+  <div class="scanner-modal" id="scannerModal">
+    <div class="scanner-header">
+      <div class="scanner-title">Scan Serial Number</div>
+      <button class="scanner-close" onclick="closeScanner()">✕</button>
+    </div>
+    <div class="scanner-body">
+      <div class="viewfinder-wrap">
+        <video id="scannerVideo" autoplay playsinline muted></video>
+        <div class="crop-zone"></div>
+        <div class="crop-corners">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+        </div>
+        <div class="crop-label-inner">ALIGN SERIAL NUMBER HERE</div>
+        <div class="scan-line" id="scanLine"></div>
+      </div>
+      <div class="scanner-controls">
+        <button class="capture-btn" onclick="captureAndOCR()" title="Capture"></button>
+        <div class="scanner-hint">Position the serial number inside the green box.<br>Tap the button to scan. Good lighting helps!</div>
+        <div class="ocr-loading" id="ocrLoading">
+          <div class="ocr-spinner"></div>
+          <div class="ocr-loading-text">Reading serial number…</div>
+        </div>
+        <div class="ocr-status" id="ocrStatus"></div>
+        <label class="upload-label">
+          📁 Or upload a photo instead
+          <input type="file" id="fileUpload" accept="image/*" onchange="handleFileUpload(event)">
+        </label>
+      </div>
+    </div>
+    <canvas id="captureCanvas"></canvas>
+  </div>
+
+<script>
+// -- CURRENCY CONFIG ----------------------------------------------
+const CURRENCIES = {
+  USD: {
+    flag:'🇺🇸', name:'US Dollar (8 digits)', hint:'Enter digits only. Skip letters at start/end.',
+    badge:'Strong market', badgeClass:'strong',
+    digits: 8, showPrefix: false,
+    denominations: ['$1','$2','$5','$10','$20','$50','$100'],
+    symbol: '$', ebayMarket: 'us',
+    specialPrefixes: [],
+    marketNote: 'Active USD collector market on eBay, Heritage Auctions & PMG.'
+  },
+  GBP: {
+    flag:'🇬🇧', name:'British Pound (6 digits)', hint:'Enter the 6 digits after the prefix letters (e.g. for AA01 123456, enter 123456). Also enter prefix above for special prefix check.',
+    badge:'Strong market', badgeClass:'strong',
+    digits: 6, showPrefix: true, prefixLabel: 'Letter Prefix (e.g. AA01, AK47)',
+    denominations: ['£5','£10','£20','£50'],
+    symbol: '£', ebayMarket: 'gb',
+    specialPrefixes: [
+      { prefix:'AA01', title:'AA01 First Print Prefix!', desc:'AA01 notes are the first printed for each denomination. These sell for hundreds to thousands - especially £5 and £10 polymer notes.', icon:'🌟' },
+      { prefix:'AK47', title:'AK47 - Famous Novelty Prefix', desc:'The AK47 prefix is highly sought by collectors for its machine gun association. A £5 AK47 once sold for over £80,000 on eBay (non-paying bidder, but shows the interest level).', icon:'⭐' },
+      { prefix:'007', title:'007 - James Bond Prefix', desc:'The 007 prefix is a favourite among collectors and Bond fans. Commands a strong premium above face value.', icon:'🎰' },
+      { prefix:'AA', title:'AA Prefix - Early Issue', desc:'Any AA prefix note is among the first million printed. Collector premium applies, especially in uncirculated condition.', icon:'✨' },
+    ],
+    marketNote: 'UK collector market via eBay.co.uk, Spink auctions and Banknote Serial Checker.'
+  },
+  EUR: {
+    flag:'🇪🇺', name:'Euro - 12-character serial (enter digits only)', hint:'Euro serials are 1 letter + 11 digits. Enter the digits only (skip the first letter).',
+    badge:'Limited market', badgeClass:'limited',
+    digits: 11, showPrefix: false,
+    denominations: ['€5','€10','€20','€50','€100','€200','€500'],
+    symbol: '€', ebayMarket: 'eu',
+    specialPrefixes: [],
+    marketNote: 'Euro fancy serial collecting is a niche hobby. Radars and low numbers have the most interest.'
+  },
+  AUD: {
+    flag:'🇦🇺', name:'Australian Dollar (8 digits)', hint:'AUD serials have a 2-3 letter prefix + numbers. Enter digits only; enter prefix above to check for first/last prefix status.',
+    badge:'Strong market', badgeClass:'strong',
+    digits: 8, showPrefix: true, prefixLabel: 'Letter Prefix (e.g. AA, ZA)',
+    denominations: ['$5','$10','$20','$50','$100'],
+    symbol: 'A$', ebayMarket: 'au',
+    specialPrefixes: [
+      { prefix:'AA', title:'AA First Prefix!', desc:'AA prefix notes are the first printed for that denomination and year. Highly collectible - especially in uncirculated condition.', icon:'🌟' },
+      { prefix:'ZA', title:'ZA / Z Prefix - Replacement Note', desc:'Notes with a Z prefix are replacement notes, printed to substitute for misprinted or damaged notes. These are rarer than standard issues and command a collector premium.', icon:'⭐' },
+      { prefix:'ZZ', title:'ZZ Last Prefix - Replacement Note', desc:'ZZ and Z-series notes are replacement notes. Depending on the print run, these can be significantly rarer than standard issues.', icon:'✨' },
+    ],
+    marketNote: 'Active AUD collector market on eBay.com.au, Banknote Serial Checker and Aussie Coins & Notes.'
+  }
+};
+
+// -- PATTERNS (shared across currencies) -------------------------
+const PATTERNS = [
+  { name:'Solid', icon:'◆', test:d=>new Set(d).size===1, score:100, usdVal:'$500-$5,000+', gbpVal:'£200-£2,000+', eurVal:'€100-€1,000+', audVal:'A$300-A$3,000+', ebq:'solid serial number banknote', note:'All digits identical - among the rarest notes in any currency.' },
+  { name:'Ladder ↑', icon:'↑', test:d=>{const s=d.split('').map(Number); let up=true,dn=true; for(let i=1;i<s.length;i++){if(s[i]!==s[i-1]+1&&!(s[i-1]===9&&s[i]===0))up=false; if(s[i]!==s[i-1]-1&&!(s[i-1]===0&&s[i]===9))dn=false;} return up||dn;}, score:90, usdVal:'$200-$2,000+', gbpVal:'£100-£1,000+', eurVal:'€80-€800+', audVal:'A$150-A$1,500+', ebq:'ladder serial number banknote', note:'Sequential ascending or descending - exceptionally rare.' },
+  { name:'Super Radar', icon:'==', test:d=>new Set(d.slice(1,d.length-1).split('')).size===1&&d[0]===d[d.length-1]&&d[0]!==d[1], score:88, usdVal:'$75-$600', gbpVal:'£40-£300', eurVal:'€30-€200', audVal:'A$50-A$400', ebq:'super radar serial number banknote', note:'Inner digits all identical, outer pair matching.' },
+  { name:'Radar', icon:'↔', test:d=>d===d.split('').reverse().join(''), score:85, usdVal:'$25-$300', gbpVal:'£15-£150', eurVal:'€10-€80', audVal:'A$20-A$200', ebq:'radar serial number banknote', note:'Palindrome - reads the same forwards and backwards.' },
+  { name:'7 of a Kind', icon:'✦', test:d=>{const f={};for(let c of d)f[c]=(f[c]||0)+1;return Object.values(f).includes(d.length-1);}, score:80, usdVal:'$50-$500', gbpVal:'£25-£250', eurVal:'€20-€150', audVal:'A$30-A$300', ebq:'seven of a kind serial number banknote', note:'All but one digit are identical.' },
+  { name:'Repeater', icon:'Rep', test:d=>{const h=Math.floor(d.length/2);return d.slice(0,h)===d.slice(h,h*2);}, score:75, usdVal:'$20-$150', gbpVal:'£10-£80', eurVal:'€8-€50', audVal:'A$15-A$100', ebq:'repeater serial number banknote', note:'First half digits repeat in second half.' },
+  { name:'Low Number', icon:'①', test:d=>parseInt(d)<1000, score:70, usdVal:'$30-$400', gbpVal:'£20-£200', eurVal:'€15-€120', audVal:'A$25-A$300', ebq:'low serial number banknote', note:'Very low serial - historically significant.' },
+  { name:'Double Quad', icon:'⊞', test:d=>{if(d.length<8)return false;const p=[d[0]+d[1],d[2]+d[3],d[4]+d[5],d[6]+d[7]];return p.every(x=>x[0]===x[1])&&new Set(p).size===4;}, score:65, usdVal:'$15-$75', gbpVal:'£8-£40', eurVal:'€5-€30', audVal:'A$10-A$50', ebq:'double quad repeater banknote', note:'Four consecutive pairs of matching digits.' },
+  { name:'Binary', icon:'01', test:d=>new Set(d.split('')).size===2, score:55, usdVal:'$10-$60', gbpVal:'£5-£30', eurVal:'€4-€20', audVal:'A$8-A$40', ebq:'binary serial number banknote', note:'Only two unique digits throughout.' },
+  { name:'Bookend', icon:'[]', test:d=>{ const q=Math.floor(d.length/3); return d.slice(0,q)===d.slice(d.length-q); }, score:50, usdVal:'$10-$40', gbpVal:'£5-£20', eurVal:'€4-€15', audVal:'A$8-A$30', ebq:'bookend serial number banknote', note:'Opening and closing digit groups match.' },
+];
+
+let currentCurrency = 'USD';
+let currentDenom = '$1';
+
+function setCurrency(code, btn) {
+  currentCurrency = code;
+  document.querySelectorAll('.currency-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const c = CURRENCIES[code];
+  document.getElementById('ciFlag').textContent = c.flag;
+  document.getElementById('ciName').textContent = c.name;
+  document.getElementById('ciHint').textContent = c.hint;
+  const badge = document.getElementById('ciBadge');
+  badge.textContent = c.badge;
+  badge.className = 'ci-badge ' + c.badgeClass;
+  // Prefix section
+  document.getElementById('prefixSection').style.display = c.showPrefix ? 'block' : 'none';
+  if (c.showPrefix) document.getElementById('prefixLabel').textContent = c.prefixLabel;
+  // Denom
+  renderDenoms(c.denominations);
+  currentDenom = c.denominations[0];
+  // Input
+  document.getElementById('serialInput').maxLength = c.digits;
+  document.getElementById('serialInput').placeholder = '0'.repeat(c.digits);
+  document.getElementById('serialLabel').textContent = 'Serial Number (' + c.digits + ' digits)';
+  document.getElementById('inputHint').textContent = c.hint;
+  // Reset
+  document.getElementById('results').className = '';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('serialInput').value = '';
+  document.getElementById('prefixInput') && (document.getElementById('prefixInput').value = '');
+}
+
+function renderDenoms(denoms) {
+  const row = document.getElementById('denomRow');
+  row.innerHTML = denoms.map((d,i)=>'<button class="denom-btn ' + (i===0?'active':'') + '" onclick="setDenom(this,\'' + d + '\')">'+d+'</button>').join('');
+}
+
+function setDenom(el, d) {
+  currentDenom = d;
+  document.querySelectorAll('.denom-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function sanitizeInput(el) {
+  el.value = el.value.replace(/[^0-9]/g,'').slice(0, CURRENCIES[currentCurrency].digits);
+}
+
+function check() {
+  const v = document.getElementById('serialInput').value;
+  const c = CURRENCIES[currentCurrency];
+  if (v.length < c.digits) {
+    document.getElementById('serialInput').style.borderColor='var(--red)';
+    setTimeout(()=>document.getElementById('serialInput').style.borderColor='',800);
+    return;
+  }
+  const prefix = document.getElementById('prefixInput') ? document.getElementById('prefixInput').value.trim().toUpperCase() : '';
+  const hits = PATTERNS.filter(p=>p.test(v));
+  const score = hits.length ? Math.max(...hits.map(p=>p.score)) : 0;
+  const top = hits.length ? hits.reduce((a,b)=>a.score>b.score?a:b) : null;
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').className = 'on';
+
+  // Ring
+  document.getElementById('ringNum').textContent = score;
+  setTimeout(()=>{
+    const ring = document.getElementById('ringFill');
+    const circumference = 2 * Math.PI * 36;
+    ring.style.strokeDasharray = circumference;
+    ring.style.strokeDashoffset = circumference * (1 - score/100);
+    ring.style.stroke = score>=80?'#4a6741':score>=55?'#c87800':'#8a8d87';
+  }, 80);
+
+  document.getElementById('scoreVerdict').textContent = top ? top.name + ' Detected! ✨' : 'No Fancy Patterns';
+  document.getElementById('scoreDetail').textContent = top ? top.note : 'No collector patterns found. This ' + currentDenom + ' note is worth face value only.';
+
+  // Special prefix check
+  const prefixAlert = document.getElementById('prefixAlert');
+  if (prefix && c.specialPrefixes.length > 0) {
+    const spMatch = c.specialPrefixes.find(sp => prefix.startsWith(sp.prefix));
+    if (spMatch) {
+      prefixAlert.className = 'prefix-alert show special';
+      document.getElementById('paIcon').textContent = spMatch.icon;
+      document.getElementById('paTitle').textContent = spMatch.title;
+      document.getElementById('paDesc').textContent = spMatch.desc;
+    } else {
+      prefixAlert.className = 'prefix-alert show normal';
+      document.getElementById('paIcon').textContent = 'ℹ️';
+      document.getElementById('paTitle').textContent = 'Standard Prefix';
+      document.getElementById('paDesc').textContent = 'This prefix is not a known special issue. Value is determined by the numeric serial patterns below.';
+    }
+  } else {
+    prefixAlert.className = 'prefix-alert';
+  }
+
+  // Patterns
+  const valKey = currentCurrency.toLowerCase()+'Val';
+  document.getElementById('patternsGrid').innerHTML = PATTERNS.map(p=>{
+    const hit = p.test(v);
+    return '<div class="pat-pill ' + (hit?'hit':'miss') + '"><div class="pat-icon">' + (hit?'✓':'·') + '</div><span>' + p.name + (hit?' - '+p[valKey]:'') + '</span></div>';
+  }).join('');
+
+  const sym = c.symbol;
+  document.getElementById('vsAmount').textContent = top ? top[valKey] : 'Face Value';
+  document.getElementById('vsNote').textContent = top ? c.marketNote : 'No premium patterns detected.';
+
+  const currency = currentCurrency.toLowerCase();
+  const ebayDomain = c.ebayMarket === 'gb' ? 'https://www.ebay.co.uk' : c.ebayMarket === 'au' ? 'https://www.ebay.com.au' : 'https://www.ebay.com';
+  const q = (top ? top.ebq : 'fancy serial number banknote') + ' ' + currentDenom;
+  document.getElementById('ebayBtn').href = ebayDomain + '/sch/i.html?_nkw=' + encodeURIComponent(q) + '&LH_Sold=1&LH_Complete=1';
+}
+
+
+// -- SCANNER ----------------------------------------------
+let videoStream = null;
+let tesseractWorker = null;
+let workerReady = false;
+
+
+function enhanceForOCR(ctx, w, h) {
+  // Step 1: get pixel data
+  const id = ctx.getImageData(0, 0, w, h);
+  const d = id.data;
+
+  // Step 2: scale up 2x for better OCR on small serials
+  // (we work on the existing canvas size but apply strong contrast)
+
+  // Step 3: convert to greyscale using luminance weights
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    d[i] = d[i+1] = d[i+2] = lum;
+  }
+  ctx.putImageData(id, 0, 0);
+
+  // Step 4: apply contrast stretch - find min/max and stretch to full range
+  const id2 = ctx.getImageData(0, 0, w, h);
+  const d2 = id2.data;
+  let min = 255, max = 0;
+  for (let i = 0; i < d2.length; i += 4) { min=Math.min(min,d2[i]); max=Math.max(max,d2[i]); }
+  const range = max - min || 1;
+  for (let i = 0; i < d2.length; i += 4) {
+    const stretched = Math.round((d2[i] - min) / range * 255);
+    d2[i] = d2[i+1] = d2[i+2] = stretched;
+  }
+  ctx.putImageData(id2, 0, 0);
+
+  // Step 5: draw upscaled version (2x) to a temp canvas for sharper OCR
+  const tmp = document.createElement('canvas');
+  tmp.width = w * 2; tmp.height = h * 2;
+  const tctx = tmp.getContext('2d');
+  tctx.imageSmoothingEnabled = false;
+  tctx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, w*2, h*2);
+
+  // Step 6: adaptive threshold on upscaled image
+  const id3 = tctx.getImageData(0, 0, tmp.width, tmp.height);
+  const d3 = id3.data;
+  const blockSize = 15;
+  const W = tmp.width, H = tmp.height;
+
+  // Calculate local mean using a simple box blur approximation
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let sum = 0, count = 0;
+      for (let dy = -blockSize; dy <= blockSize; dy++) {
+        for (let dx = -blockSize; dx <= blockSize; dx++) {
+          const nx = x+dx, ny = y+dy;
+          if (nx>=0 && nx<W && ny>=0 && ny<H) {
+            sum += d3[((ny*W)+nx)*4];
+            count++;
+          }
+        }
+      }
+      const mean = sum / count;
+      const idx = (y*W+x)*4;
+      const val = d3[idx] < mean - 8 ? 0 : 255; // dark pixels become black (text), light become white
+      d3[idx] = d3[idx+1] = d3[idx+2] = val;
+    }
+  }
+  tctx.putImageData(id3, 0, 0);
+
+  // Step 7: copy result back to original canvas
+  ctx.canvas.width = tmp.width;
+  ctx.canvas.height = tmp.height;
+  ctx.drawImage(tmp, 0, 0);
+}
+
+async function initTesseract() {
+  if (tesseractWorker) return;
+  try {
+    tesseractWorker = await Tesseract.createWorker('eng', 1, {
+      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+      corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
+      logger: () => {}
+    });
+    await tesseractWorker.setParameters({
+      tessedit_char_whitelist: '0123456789',
+      tessedit_pageseg_mode: '7',   // treat as single line of text
+      tessedit_ocr_engine_mode: '1', // LSTM only - better for clean digits
+    });
+    workerReady = true;
+  } catch(e) { console.warn('Tesseract init failed', e); }
+}
+
+function openScanner() {
+  document.getElementById('scannerModal').classList.add('open');
+  startCamera();
+  initTesseract();
+}
+
+function closeScanner() {
+  document.getElementById('scannerModal').classList.remove('open');
+  stopCamera();
+  document.getElementById('ocrStatus').className = 'ocr-status';
+  document.getElementById('ocrLoading').className = 'ocr-loading';
+  document.getElementById('scanLine').classList.remove('active');
+}
+
+async function startCamera() {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal:'environment' }, width:{ideal:1280}, height:{ideal:720} }
+    });
+    const v = document.getElementById('scannerVideo');
+    v.srcObject = videoStream;
+    v.play();
+  } catch(e) {
+    showOcrStatus('Camera needs HTTPS to work - use \'Or upload a photo\' below instead, or host the app online.', 'error');
+  }
+}
+
+function stopCamera() {
+  if (videoStream) { videoStream.getTracks().forEach(t=>t.stop()); videoStream=null; }
+}
+
+async function captureAndOCR() {
+  const video = document.getElementById('scannerVideo');
+  const canvas = document.getElementById('captureCanvas');
+  if (!video.videoWidth) { showOcrStatus('Camera not ready - wait a moment and try again.', 'error'); return; }
+
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const cx = vw*0.05, cw = vw*0.90, cy = vh*0.30, ch = vh*0.40;  // wider, taller, higher
+  canvas.width = cw; canvas.height = ch;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
+
+  // Enhanced preprocessing for colourful polymer banknotes
+  enhanceForOCR(ctx, cw, ch);
+
+  document.getElementById('scanLine').classList.add('active');
+  document.getElementById('ocrLoading').className = 'ocr-loading show';
+  document.getElementById('ocrStatus').className = 'ocr-status';
+
+  try {
+    if (!workerReady) { await initTesseract(); }
+    const result = await tesseractWorker.recognize(canvas);
+    const digits = result.data.text.replace(/[^0-9]/g,'');
+    document.getElementById('scanLine').classList.remove('active');
+    document.getElementById('ocrLoading').className = 'ocr-loading';
+    const maxLen = CURRENCIES[currentCurrency].digits;
+    if (digits.length >= Math.max(4, maxLen-2)) {
+      document.getElementById('serialInput').value = digits.slice(0,maxLen);
+      showOcrStatus('✓ Got ' + digits.slice(0,maxLen) + ' - closing in a moment...', 'success');
+      setTimeout(()=>{ closeScanner(); }, 2000);
+    } else {
+      showOcrStatus('Could not read clearly ("' + digits + '") - try better lighting or upload a photo.', 'error');
+    }
+  } catch(e) {
+    document.getElementById('scanLine').classList.remove('active');
+    document.getElementById('ocrLoading').className = 'ocr-loading';
+    showOcrStatus('Scan failed - please try again or upload a photo.', 'error');
+  }
+}
+
+function showOcrStatus(msg, type) {
+  const el = document.getElementById('ocrStatus');
+  el.textContent = msg;
+  el.className = 'ocr-status show' + (type?' '+type:'');
+}
+
+async function handleFileUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  document.getElementById('ocrLoading').className = 'ocr-loading show';
+  try {
+    if (!workerReady) await initTesseract();
+    const img = await createImageBitmap(file);
+    const canvas = document.getElementById('captureCanvas');
+    const cw=img.width*0.8, ch=img.height*0.2, cx=img.width*0.1, cy=img.height*0.4;
+    canvas.width=cw; canvas.height=ch;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,cx,cy,cw,ch,0,0,cw,ch);
+    enhanceForOCR(ctx, cw, ch);
+    const result = await tesseractWorker.recognize(canvas);
+    const digits = result.data.text.replace(/[^0-9]/g,'');
+    document.getElementById('ocrLoading').className = 'ocr-loading';
+    const maxLen = CURRENCIES[currentCurrency].digits;
+    if (digits.length >= Math.max(4,maxLen-2)) {
+      document.getElementById('serialInput').value = digits.slice(0,maxLen);
+      showOcrStatus('✓ Detected: ' + digits.slice(0,maxLen) + ' - closing...', 'success');
+      setTimeout(()=>closeScanner(), 2000);
+    } else {
+      showOcrStatus('Could not read serial - try cropping tighter to just the number.', 'error');
+    }
+  } catch(err) {
+    document.getElementById('ocrLoading').className = 'ocr-loading';
+    showOcrStatus('Upload failed - try a clearer, closer photo.', 'error');
+  }
+}
+
+// Init - wait for DOM to be ready
+try {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      renderDenoms(CURRENCIES.USD.denominations);
+    });
+  } else {
+    renderDenoms(CURRENCIES.USD.denominations);
+  }
+} catch(e) {
+  document.body.innerHTML += '<div style="background:red;color:white;padding:20px;font-size:14px;position:fixed;bottom:0;left:0;right:0;z-index:9999">JS ERROR: ' + e.message + '</div>';
+}
+</script>
+</body>
+</html>
